@@ -6,6 +6,7 @@ import pickle
 import catboost
 from catboost import CatBoostClassifier
 from sklearn import preprocessing
+import matplotlib.pyplot as plt
 ##############################
 
 if 'count' not in st.session_state :
@@ -99,10 +100,35 @@ for i in data.columns :
     d=dict(zip(a,b))
     data[i] = data[i].map(d)
 
-## Predicting ##
+####################################
+## Predicting and showing results ##
+####################################
 
-output = loaded_model.predict( data[0:1] )[0][0]
+classes = loaded_model.classes_
+output = loaded_model.predict_proba( data[0:1] )[0]
 
-st.write()
-st.write()
-st.write( 'Your cluster is : ' + str(output) )
+ar = []
+for i in range( len(classes) ) :
+	ar.append( ( output[i], classes[i] ) )
+
+ar.sort()
+ar.reverse()
+
+classes, output = [],[]
+for i in ar :
+	classes.append( i[1] )
+	output.append( i[0] )
+
+
+# creating the bar plot
+
+fig = plt.figure(figsize = (10, 5))
+
+plt.bar(classes, output, color ='maroon',
+        width = 0.4)
+ 
+plt.xlabel("Courses offered")
+plt.ylabel("No. of students enrolled")
+plt.title("Students enrolled in different courses")
+
+st.pyplot( plt )
