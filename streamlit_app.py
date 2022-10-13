@@ -13,9 +13,13 @@ if 'count' not in st.session_state :
 
 	st.session_state['count'] = 0
 
-	data = pd.read_excel( 'new_5th_variant_v2.xlsx' )
+	############################################################
+	data = pd.read_csv( 'last_dataset.csv' )
 
-	loaded_model = pickle.load(open('final_cluster.pickle', 'rb'))
+	loaded_model = pickle.load(open('last_model.pickle', 'rb'))
+
+	trans = pd.read_csv( 'translations.csv' )
+	############################################################
 
 	variables = ['nom_q_9103f','nom_q_9103o','nom_q_9103b','nom_q_9103k',
 	             'nom_q_9103s','nom_q_9103h','nom_q_9103c','nom_q_9103l','nom_q_9103j',
@@ -55,24 +59,43 @@ if 'count' not in st.session_state :
 
 	data.drop( ['serv_SbjNum','nom_q_3222code'],axis=1,inplace=True )
 
-
 	#######################################
 	st.session_state['data'] = data
 	st.session_state['loaded_model'] = loaded_model
 	st.session_state['label'] = label
+	st.session_state['trans'] = trans
 
 
-
+## Copying first read variables ##
 data = st.session_state['data']
 loaded_model = st.session_state['loaded_model']
 label = st.session_state['label']
+trans = st.session_state['trans']
+
 ######################################################################################
 
 
 user_data = pd.DataFrame()
 
+mp, mp_inverse = {},{}
+for i in range( len( trans ) ) :
+    mp[ trans['eng'][i] ] = trans['tjk'][i]
+    mp_inverse[ trans['tjk'][i] ] = trans['eng'][i]
+
+
 for i in data.columns :
-	ans = st.selectbox( label[i], options = list(data[i].value_counts().index) )
+	#################################
+	options = list(data[i].value_counts().index)	
+	for j in range( len(options) ) :
+		options[j] = mp[ options[j] ]
+	##################################
+
+	ans = st.selectbox( label[i], options = options )
+
+	##################################
+	ans = mp_inverse[ ans ]
+	###################################
+
 	user_data[ i ] = [ ans ]
 
 data = pd.concat( [user_data,data] )
@@ -124,11 +147,11 @@ for i in ar :
 
 fig = plt.figure(figsize = (10, 5))
 
-plt.bar(classes, output, color ='maroon',
+plt.bar(classes, output, color ='green',
         width = 0.4)
  
-plt.xlabel("Courses offered")
-plt.ylabel("No. of students enrolled")
-plt.title("Students enrolled in different courses")
+plt.xlabel("Кластерҳo")
+plt.ylabel("Чанд кадар ба шимо мувофик хаст")
+plt.title("Чавоби шумо")
 
 st.pyplot( plt )
