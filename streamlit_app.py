@@ -1,4 +1,4 @@
-##############################
+##########################
 import streamlit as st
 import pandas as pd
 import pyreadstat
@@ -7,7 +7,10 @@ import catboost
 from catboost import CatBoostClassifier
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
-##############################
+
+######################################################################################
+##					Reading all needed files and choosing needed variables			##
+######################################################################################
 
 if 'count' not in st.session_state :
 
@@ -19,6 +22,10 @@ if 'count' not in st.session_state :
 	loaded_model = pickle.load(open('last_model.pickle', 'rb'))
 
 	trans = pd.read_csv( 'translations.csv' )
+
+	df, meta = pyreadstat.read_sav('SAV_format.sav')
+
+	variable_values = meta.variable_value_labels
 	############################################################
 
 	variables = ['nom_q_9103f','nom_q_9103o','nom_q_9103b','nom_q_9103k',
@@ -48,8 +55,6 @@ if 'count' not in st.session_state :
 
 	######################################################################################
 
-	df, meta = pyreadstat.read_sav('SAV_format.sav')
-
 	dic = meta.column_names_to_labels # Dictionary of variables and labels
 
 	label = {}
@@ -64,16 +69,19 @@ if 'count' not in st.session_state :
 	st.session_state['loaded_model'] = loaded_model
 	st.session_state['label'] = label
 	st.session_state['trans'] = trans
+	st.session_state['variable_values'] = variable_values
 
 
-## Copying first read variables ##
+## Copying variables which are already read ##
 data = st.session_state['data']
 loaded_model = st.session_state['loaded_model']
 label = st.session_state['label']
 trans = st.session_state['trans']
+variable_values = st.session_state['variable_values']
 
 ######################################################################################
-
+##					   Collecting user data ( Asking questions )					##
+######################################################################################
 
 user_data = pd.DataFrame()
 
@@ -85,7 +93,13 @@ for i in range( len( trans ) ) :
 
 for i in data.columns :
 	#################################
-	options = list(data[i].value_counts().index)	
+	options = []
+	for j in variable_values[i] :
+		if variable_values[i][j] == 'Yes, more than 10 years' and i == 'nom_q_9306' :
+			options.append( 'Official / Registered Employee (NOT YOUR FAMILY BUSINESS)' )
+			continue
+		options.append( variable_values[i][j] )
+	##################################
 	for j in range( len(options) ) :
 		options[j] = mp[ options[j] ]
 	##################################
@@ -102,9 +116,9 @@ data = pd.concat( [user_data,data] )
 
 data.index = range( len(data) )
 
-#############################################
-#			Predicting 3222  				#
-#############################################
+######################################################################################
+#								Performing cluster predictions  					##
+######################################################################################
 
 for i in data.columns :
     if ('nom' not in i) :
@@ -127,21 +141,19 @@ for i in data.columns :
 ## Predicting and showing results ##
 ####################################
 
-classes = loaded_model.classes_
+classes = list(loaded_model.classes_)
 output = loaded_model.predict_proba( data[0:1] )[0]
 
-ar = []
+cluster_labels = {
+	1:'табиӣ ва техникӣ',
+	2:'иқтисод ва география',
+	3:'филология, педагогика ва санъат',
+	4:'ҷомеашиносӣ ва ҳуқуқ',
+	5:'тиб, биология ва варзиш'
+}
+
 for i in range( len(classes) ) :
-	ar.append( ( output[i], classes[i] ) )
-
-ar.sort()
-ar.reverse()
-
-classes, output = [],[]
-for i in ar :
-	classes.append( i[1] )
-	output.append( i[0] )
-
+	classes[i] = cluster_labels[ classes[i] ]
 
 # creating the bar plot
 
@@ -153,5 +165,6 @@ plt.bar(classes, output, color ='green',
 plt.xlabel("Кластерҳo")
 plt.ylabel("Чанд кадар ба шимо мувофик хаст")
 plt.title("Чавоби шумо")
+plt.xticks(rotation=20)
 
 st.pyplot( plt )
