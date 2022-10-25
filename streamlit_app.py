@@ -137,7 +137,7 @@ for i in data.columns :
     d=dict(zip(a,b))
     data[i] = data[i].map(d)
 
-st.write(data.shape)
+st.write(loaded_model.feature_names_)
 ####################################
 ## Predicting and showing results ##
 ####################################
