@@ -137,6 +137,7 @@ for i in data.columns :
     d=dict(zip(a,b))
     data[i] = data[i].map(d)
 
+st.write(data.shape)
 ####################################
 ## Predicting and showing results ##
 ####################################
